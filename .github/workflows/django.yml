@@ -24,7 +24,7 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r /hide_n_seek/requirements.txt
+        pip install -r hide_n_seek/requirements.txt
     - name: Run Tests
       run: |
-        python manage.py test
+        python hide_n_seek/manage.py test
