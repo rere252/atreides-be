@@ -1,79 +1,62 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const http = require('http').Server(express);
-const io = require('socket.io')(http);
 const bodyParser = require('body-parser');
-
+const morgan = require('morgan');
+const cors = require('cors');
+const WebSocket = require('ws');
 const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(morgan('dev'));
 app.use(bodyParser.json());
 
-// 连接MongoDB
-mongoose.connect('mongodb://localhost:27017/hideAndSeek');
+mongoose.connect(process.env.DB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => console.log('MongoDB connected successfully.'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// 设置静态文件目录
-app.use(express.static('public'));
 
-const PORT = process.env.PORT || 3000;
+app.use('/api/users', require('./routes/users'));
+app.use('/api/games', require('./routes/games'));
 
-// 启动服务器
-http.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+const server = app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
 
+const wss = new WebSocket.Server({ server });
 
-// ....创建游戏房间和处理用户加入
+module.exports = { app, wss };
 
-let currentRoom;
-
-app.post('/room', async (req, res) => {
-  const room = new Room({
-    name: req.body.name,
-    location: req.body.location
+wss.on('connection', ws => {
+    console.log('Client connected');
+    ws.on('message', message => {
+      const data = JSON.parse(message);
+      handleMessages(data, ws);
+    });
+    ws.on('close', () => {
+      console.log('Client disconnected');
+    });
   });
-  const savedRoom = await room.save();
-  currentRoom = savedRoom;
-  res.status(200).json(savedRoom);
-});
-
-app.post('/join', async (req, res) => {
-  const user = new User({
-    nickname: req.body.nickname,
-    role: req.body.role,
-    position: req.body.position
-  });
-  const savedUser = await user.save();
-  if (currentRoom) {
-    currentRoom.players.push(savedUser._id);
-    await currentRoom.save();
+  
+  function handleMessages(data, ws) {
+    switch(data.type) {
+      case 'locationUpdate':
+        broadcastLocation(data);
+        break;
+      case 'gameEvent':
+        handleGameEvent(data, ws);
+        break;
+    }
   }
-  res.status(200).json(savedUser);
-});
-
-
-// ...处理游戏逻辑
-
-io.on('connection', (socket) => {
-    console.log('a user connected');
   
-    socket.on('joinRoom', (roomId, userData) => {
-      // 将用户添加到房间
+  function broadcastLocation(data) {
+    wss.clients.forEach(client => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(data));
+      }
     });
+  }
   
-    socket.on('updatePosition', (position) => {
-      // 更新用户位置
-      // 检查距离并通知寻找者
-    });
-  
-    socket.on('hiderReady', (hiderId) => {
-      // 隐藏者准备就绪
-    });
-  
-    socket.on('seekerFoundHider', (hiderId) => {
-      // 寻找者找到了隐藏者
-      io.emit('gameOver', hiderId);
-    });
-  
-    socket.on('disconnect', () => {
-      console.log('user disconnected');
-    });
-  });

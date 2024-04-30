@@ -1,7 +1,6 @@
 {
   "name": "hide-and-seek-app",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,11 +8,15 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "description": "",
   "dependencies": {
     "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "mongodb": "^6.5.0",
+    "geolib": "^3.3.4",
     "mongoose": "^8.3.3",
-    "socket.io": "^4.7.5"
+    "morgan": "^1.10.0",
+    "ws": "^8.17.0"
   }
 }
