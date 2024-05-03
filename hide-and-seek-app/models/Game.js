@@ -14,7 +14,18 @@ const gameSchema = new mongoose.Schema({
     type: String,
     enum: ['waiting', 'active', 'finished'],
     default: 'waiting'
-  }
+  },
+  hiderLocation: {
+    exact: {
+      latitude: Number,
+      longitude: Number
+    },
+    approximate: {
+      latitude: Number,
+      longitude: Number
+    }
+  },
+  winnerNickname: String
 });
 
 module.exports = mongoose.model('Game', gameSchema);
