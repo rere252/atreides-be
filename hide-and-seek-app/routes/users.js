@@ -1,12 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Game = require('../models/Game');
 
 router.post('/register', async (req, res) => {
   try {
     const { nickname, role, room } = req.body;
     const newUser = new User({ nickname, role, room });
     await newUser.save();
+
+    let game = await Game.findOne({room});
+    if (!game) {
+      game = new Game({room});
+      game.save();
+    }
+    if (role === 'hider') {
+      await Game.updateOne({room}, {status: 'HIDER_LOOKING_FOR_SPOT'});
+    }
+  
     res.status(201).send({ message: 'User registered successfully', id: newUser._id });
   } catch (error) {
     res.status(400).send({ message: 'Error registering user', error: error.message });
@@ -24,7 +35,6 @@ router.post('/location', async (req, res) => {
     if (!hider) {
       return res.status(404).send({ message: 'Hider not found' });
     }
-
     const previousDistance = geolib.getDistance(
       { latitude: user.location.latitude, longitude: user.location.longitude },
       { latitude: hider.location.latitude, longitude: hider.location.longitude }
