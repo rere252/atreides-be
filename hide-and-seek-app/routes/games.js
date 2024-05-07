@@ -96,13 +96,32 @@ router.get('/poll-game-state/:roomId', async (req, res) => {
     if (!game) {
       return res.status(404).send({ message: 'Game not found' });
     }
-    res.status(200).send({
+    const state = {
       status: game.status,
-      hidersApproximateLocation: game.hiderLocation.approximate,
       winnerNickname: game.winnerNickname
-    });
+    };
+    const approximateLocation = game.hiderLocation?.approximate;
+    if (approximateLocation.latitude && approximateLocation.longitude) {
+      state.hidersApproximateLocation = approximateLocation;
+    }
+    res.status(200).send(state);
   } catch (error) {
     res.status(500).send({ message: 'Error polling game state', error: error.message });
+  }
+});
+
+// 5. Reset game
+router.post('/reset-game', async (req, res) => {
+  const { roomId } = req.body;
+  try {
+    await Game.findOneAndUpdate(
+      { room: roomId },
+      { status: 'WAITING_FOR_PLAYERS' }
+    );
+    await Game.
+    res.status(202).send();
+  } catch (error) {
+    res.status(400).send({ message: 'Error resetting game', error: error.message });
   }
 });
 
