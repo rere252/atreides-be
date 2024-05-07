@@ -6,14 +6,10 @@ const gameSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  players: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
   status: {
     type: String,
-    enum: ['waiting', 'active', 'finished'],
-    default: 'waiting'
+    enum: ['HIDER_LOOKING_FOR_SPOT', 'STARTED', 'ENDED', 'WAITING_FOR_PLAYERS'],
+    default: 'WAITING_FOR_PLAYERS'
   },
   hiderLocation: {
     exact: {
