@@ -8,8 +8,8 @@ const gameSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['HIDER_LOOKING_FOR_SPOT', 'STARTED', 'ENDED', 'WAITING_FOR_PLAYERS'],
-    default: 'WAITING_FOR_PLAYERS'
+    enum: ['HIDER_LOOKING_FOR_SPOT', 'STARTED', 'ENDED', 'WAITING_FOR_HIDER', 'NOT_STARTED'],
+    default: 'WAITING_FOR_HIDER'
   },
   hiderLocation: {
     exact: {

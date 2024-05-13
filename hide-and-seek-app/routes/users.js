@@ -16,6 +16,10 @@ router.post('/register', async (req, res) => {
     }
     if (role === 'hider') {
       await Game.updateOne({room}, {status: 'HIDER_LOOKING_FOR_SPOT'});
+    } else {
+      if (game.status === 'ENDED' || game.status === 'NOT_STARTED') {
+        await Game.updateOne({room}, {status: 'WAITING_FOR_HIDER'});
+      }
     }
   
     res.status(201).send({ message: 'User registered successfully', id: newUser._id });
@@ -55,6 +59,16 @@ router.post('/location', async (req, res) => {
     });
   } catch (error) {
     res.status(400).send({ message: 'Error updating location', error: error.message });
+  }
+});
+
+router.get('/nickname-taken/:nickname', async (req, res) => {
+  try {
+    const { nickname } = req.params;
+    const user = await User.findOne({ nickname });
+    res.status(200).send({ nicknameTaken: Boolean(user) });
+  } catch (error) {
+    res.status(500).send({ message: 'Error checking nickname', error: error.message });
   }
 });
 

@@ -26,10 +26,9 @@ router.post('/lock-hider-location', async (req, res) => {
       { room: roomId },
       {
         status: 'STARTED',
-        'hiderLocation.exact': location,
-        'hiderLocation.approximate': {
-          latitude: approximateLocation.latitude,
-          longitude: approximateLocation.longitude
+        hiderLocation: {
+          exact: location,
+          approximate: approximateLocation
         }
       },
       { new: true }
@@ -52,7 +51,7 @@ router.post('/update-seeker-location', async (req, res) => {
     const currentDistance = geolib.getDistance(newLocation, game.hiderLocation.exact);
 
     let guidance = 'NO_CHANGE';
-    if (previousLocation) {
+    if (previousLocation.latitude && previousLocation.longitude) {
       const previousDistance = geolib.getDistance(previousLocation, game.hiderLocation.exact);
       if (currentDistance < previousDistance && Math.abs(currentDistance - previousDistance) > 2) {
         guidance = 'GOT_CLOSER';
@@ -65,7 +64,10 @@ router.post('/update-seeker-location', async (req, res) => {
 
     const result = currentDistance <= 50 ? 'FOUND' : 'NOT_FOUND';
     if (result === 'FOUND') {
-      await Game.findByIdAndUpdate(game._id, { status: 'ENDED', winnerNickname: user.nickname });
+      await Game.findByIdAndUpdate(
+        game._id, 
+        { status: 'ENDED', winnerNickname: user.nickname, hidersExactLocation: game.hiderLocation.exact}
+      );
       await User.deleteMany({ room: user.room });
     }
   
@@ -88,6 +90,9 @@ router.get('/poll-game-state/:roomId', async (req, res) => {
       status: game.status,
       winnerNickname: game.winnerNickname
     };
+    if (state.status === 'ENDED') {
+      state.hiderName = await User.findOne({ room: roomId, role: 'hider' }).nickname;
+    }
     const approximateLocation = game.hiderLocation?.approximate;
     if (approximateLocation.latitude && approximateLocation.longitude) {
       state.hidersApproximateLocation = approximateLocation;
@@ -102,14 +107,40 @@ router.get('/poll-game-state/:roomId', async (req, res) => {
 router.post('/reset-game', async (req, res) => {
   const { roomId } = req.body;
   try {
-    await Game.findOneAndUpdate(
-      { room: roomId },
-      { status: 'WAITING_FOR_PLAYERS' }
-    );
-    await Game.
+    const game = await Game.findOne({ room: roomId });
+    if (game.status === 'ENDED') {
+      await game.updateOne({ status: 'NOT_STARTED', hiderLocation: null});
+    }
     res.status(202).send();
   } catch (error) {
     res.status(400).send({ message: 'Error resetting game', error: error.message });
+  }
+});
+
+// 6. Get all rooms
+router.get('/rooms', async (req, res) => {
+  try {
+    const games = await Game.find();
+    const roomsWithPlayerCount = await Promise.all(games.map(async game => {
+      const room = game.room;
+      const playerCount = await User.countDocuments({ room });
+      return { name: room, playerCount, status: game.status };
+    }));
+    res.status(200).send(roomsWithPlayerCount);
+  } catch (error) {
+    res.status(500).send({ message: 'Error getting rooms', error: error.message });
+  }
+});
+
+// 7. Check if room exists
+router.get('/room-exists/:roomName', async (req, res) => {
+  try {
+    const { roomName } = req.params;
+    const game = await Game.findOne({ room: roomName });
+    const games = await Game.find();
+    res.status(200).send({ roomExists: Boolean(game) });
+  } catch (error) {
+    res.status(500).send({ message: 'Error checking room', error: error.message });
   }
 });
 
