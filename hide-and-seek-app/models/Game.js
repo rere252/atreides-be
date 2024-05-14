@@ -21,6 +21,7 @@ const gameSchema = new mongoose.Schema({
       longitude: Number
     }
   },
+  hiderNickname: String,
   winnerNickname: String
 });
 
