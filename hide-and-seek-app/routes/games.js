@@ -22,7 +22,8 @@ router.post('/lock-hider-location', async (req, res) => {
   const { roomId, location} = req.body;
   try {
     const hiderNickname = (await User.findOne({ room: roomId, role: 'hider' })).nickname;
-    const approximateLocation = geolib.computeDestinationPoint(location, Math.random() * 1000, Math.random() * 360);
+    const random = Math.random();
+    const approximateLocation = geolib.computeDestinationPoint(location, random * 1000, random * 360);
     await Game.findOneAndUpdate(
       { room: roomId },
       {
