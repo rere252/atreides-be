@@ -168,3 +168,5 @@ router.get('/player-in-room/:playerId', async (req, res) => {
   }
 });
 
+module.exports = router;
+
