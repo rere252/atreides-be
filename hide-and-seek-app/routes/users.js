@@ -73,7 +73,7 @@ router.get('/nickname-taken/:nickname', async (req, res) => {
 });
 
 router.delete('/remove/:userId', async (req, res) => {
-  const { playerId: userId } = req.params;
+  const { userId } = req.params;
   try {
     await User.findByIdAndDelete(userId);
     res.status(202).send();
