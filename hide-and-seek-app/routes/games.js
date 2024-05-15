@@ -157,4 +157,14 @@ router.get('/room-exists/:roomName', async (req, res) => {
   }
 });
 
-module.exports = router;
+// 8. Check if player is still in room
+router.get('/player-in-room/:playerId', async (req, res) => {
+  try {
+    const { playerId } = req.params;
+    const user = await User.findById(playerId);
+    res.status(200).send({ inRoom: Boolean(user) });
+  } catch (error) {
+    res.status(500).send({ message: 'Error checking player', error: error.message });
+  }
+});
+
