@@ -19,7 +19,6 @@ router.post('/register', async (req, res) => {
       user = new User({ nickname, role, room });
       await user.save();
     }
-    console.log(user);
 
     let game = await Game.findOne({room});
     if (!game) {

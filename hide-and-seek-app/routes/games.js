@@ -45,7 +45,6 @@ router.post('/lock-hider-location', async (req, res) => {
 // 3. Update seekers location
 router.post('/update-seeker-location', async (req, res) => {
   const { seekerId, location: newLocation } = req.body;
-  console.log('newLocation', newLocation);
   try {
     const user = await User.findById(seekerId);
     const game = await Game.findOne({ room: user.room });
