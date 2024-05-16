@@ -65,7 +65,7 @@ router.post('/update-seeker-location', async (req, res) => {
 
     await User.findByIdAndUpdate(seekerId, { location: newLocation });
 
-    const result = currentDistance <= 50 ? 'FOUND' : 'NOT_FOUND';
+    const result = currentDistance <= 10 ? 'FOUND' : 'NOT_FOUND';
     if (result === 'FOUND') {
       await Game.findByIdAndUpdate(
         game._id, 
