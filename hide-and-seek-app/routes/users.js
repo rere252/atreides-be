@@ -5,9 +5,21 @@ const Game = require('../models/Game');
 
 router.post('/register', async (req, res) => {
   try {
-    const { nickname, role, room } = req.body;
-    const newUser = new User({ nickname, role, room });
-    await newUser.save();
+    const { nickname, role, room, userId } = req.body;
+    let user = await User.findById(userId);
+    if (user) {
+      const previousRoom = user.room;
+      await user.updateOne({ nickname, role, room });
+      // If the players previous room has no more players, then set the game status to NOT_STARTED.
+      const previousRoomPlayers = await User.find({ room: previousRoom });
+      if (previousRoomPlayers.length < 1) {
+        await Game.updateOne({ room: previousRoom }, { status: 'NOT_STARTED' });
+      }
+    } else {
+      user = new User({ nickname, role, room });
+      await user.save();
+    }
+    console.log(user);
 
     let game = await Game.findOne({room});
     if (!game) {
@@ -22,7 +34,7 @@ router.post('/register', async (req, res) => {
       }
     }
   
-    res.status(201).send({ message: 'User registered successfully', id: newUser._id });
+    res.status(201).send({ message: 'User registered successfully', id: user._id });
   } catch (error) {
     res.status(400).send({ message: 'Error registering user', error: error.message });
   }
@@ -65,20 +77,11 @@ router.post('/location', async (req, res) => {
 router.get('/nickname-taken/:nickname', async (req, res) => {
   try {
     const { nickname } = req.params;
+    const { userId } = req.query;
     const user = await User.findOne({ nickname });
-    res.status(200).send({ nicknameTaken: Boolean(user) });
+    res.status(200).send({ nicknameTaken: Boolean(user && user.id !== userId) });
   } catch (error) {
     res.status(500).send({ message: 'Error checking nickname', error: error.message });
-  }
-});
-
-router.delete('/remove/:userId', async (req, res) => {
-  const { userId } = req.params;
-  try {
-    await User.findByIdAndDelete(userId);
-    res.status(202).send();
-  } catch (error) {
-    res.status(400).send({ message: 'Error removing player', error: error.message });
   }
 });
 

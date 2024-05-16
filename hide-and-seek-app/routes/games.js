@@ -5,7 +5,7 @@ const User = require('../models/User');
 const geolib = require('geolib');
 
 
-// 1.Check whether a room has a hider
+// 1. Check whether a room has a hider
 router.get('/check-hider/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -45,6 +45,7 @@ router.post('/lock-hider-location', async (req, res) => {
 // 3. Update seekers location
 router.post('/update-seeker-location', async (req, res) => {
   const { seekerId, location: newLocation } = req.body;
+  console.log('newLocation', newLocation);
   try {
     const user = await User.findById(seekerId);
     const game = await Game.findOne({ room: user.room });
@@ -168,5 +169,24 @@ router.get('/player-in-room/:playerId', async (req, res) => {
   }
 });
 
-module.exports = router;
+// 9. Remove user from room
+router.delete('/remove-from-room/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findById(userId);
+    const room = user.room;
+    await User.findByIdAndUpdate(userId, { room: null });
+    const roomsPlayerCount = await User.countDocuments({ room });
+    if (roomsPlayerCount < 1) {
+      await Game.findOneAndUpdate(
+        { room },
+        { status: 'NOT_STARTED', hiderLocation: null, hiderNickname: null, winnerNickname: null}
+      );
+    }
+    res.status(202).send();
+  } catch (error) {
+    res.status(400).send({ message: 'Error removing user from room', error: error.message });
+  }
+});
 
+module.exports = router;
