@@ -162,14 +162,16 @@ router.delete('/remove-from-room/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
     const user = await User.findById(userId);
-    const room = user.room;
-    await User.findByIdAndUpdate(userId, { room: null });
-    const roomsPlayerCount = await User.countDocuments({ room });
-    if (roomsPlayerCount < 1) {
-      await Game.findOneAndUpdate(
-        { room },
-        { status: 'NOT_STARTED', hiderLocation: null, hiderNickname: null, winnerNickname: null}
-      );
+    if (user) {
+      const room = user.room;
+      await User.findByIdAndUpdate(userId, { room: null });
+      const roomsPlayerCount = await User.countDocuments({ room });
+      if (roomsPlayerCount < 1) {
+        await Game.findOneAndUpdate(
+          { room },
+          { status: 'NOT_STARTED', hiderLocation: null, hiderNickname: null, winnerNickname: null}
+        );
+      }
     }
     res.status(202).send();
   } catch (error) {
