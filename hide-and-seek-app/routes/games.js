@@ -50,22 +50,11 @@ router.post('/update-seeker-location', async (req, res) => {
     const game = await Game.findOne({ room: user.room });
     if (!game) return res.status(404).send({ message: 'Game not found' });
 
-    const previousLocation = user.location;
-    const currentDistance = geolib.getDistance(newLocation, game.hiderLocation.exact);
-
-    let guidance = 'NO_CHANGE';
-    if (previousLocation.latitude && previousLocation.longitude) {
-      const previousDistance = geolib.getDistance(previousLocation, game.hiderLocation.exact);
-      if (currentDistance < previousDistance && Math.abs(currentDistance - previousDistance) > 2) {
-        guidance = 'GOT_CLOSER';
-      } else if (currentDistance > previousDistance && Math.abs(currentDistance - previousDistance) > 2) {
-        guidance = 'WENT_FURTHER';
-      }
-    }
+    const currentDistanceToHider = geolib.getDistance(newLocation, game.hiderLocation.exact);
 
     await User.findByIdAndUpdate(seekerId, { location: newLocation });
 
-    const result = currentDistance <= 10 ? 'FOUND' : 'NOT_FOUND';
+    const result = currentDistanceToHider <= 10 ? 'FOUND' : 'NOT_FOUND';
     if (result === 'FOUND') {
       await Game.findByIdAndUpdate(
         game._id, 
@@ -74,7 +63,7 @@ router.post('/update-seeker-location', async (req, res) => {
       await User.deleteMany({ room: user.room });
     }
   
-    res.status(200).send({ result, guidance });
+    res.status(200).send({ result, distanceToHider: currentDistanceToHider});
   } catch (error) {
     res.status(400).send({ message: 'Error updating seeker location', error: error.message });
   }
