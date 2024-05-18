@@ -58,12 +58,28 @@ router.post('/update-seeker-location', async (req, res) => {
     if (result === 'FOUND') {
       await Game.findByIdAndUpdate(
         game._id, 
-        { status: 'ENDED', winnerNickname: user.nickname, hidersExactLocation: game.hiderLocation.exact}
+        {
+          status: 'ENDED',
+          winnerNickname: user.nickname,
+          hidersExactLocation: game.hiderLocation.exact,
+        }
       );
       await User.deleteMany({ room: user.room });
     }
+
+    const roomsSeekers = await User.find({ room: user.room, role: 'seeker' });
+    const seekersWithDistanceToHider = roomsSeekers.map(seeker => {
+      const distance = geolib.getDistance(seeker.location, game.hiderLocation.exact);
+      return { nickname: seeker.nickname, distance };
+    });
+    const closestSeeker = seekersWithDistanceToHider.reduce(
+      (closest, seeker) => seeker.distance < closest.distance ? seeker : closest,
+      { distance: Infinity }
+    );
+    await Game.findByIdAndUpdate(game._id, { closestSeekerNickname: closestSeeker.nickname });
+    console.log('Closest seeker:', closestSeeker.nickname, 'Distance:', closestSeeker.distance)
   
-    res.status(200).send({ result, distanceToHider: currentDistanceToHider});
+    res.status(200).send({ result, distanceToHider: currentDistanceToHider });
   } catch (error) {
     res.status(400).send({ message: 'Error updating seeker location', error: error.message });
   }
@@ -93,6 +109,9 @@ router.get('/poll-game-state/:roomId', async (req, res) => {
       if (approximateLocation.latitude && approximateLocation.longitude) {
         stateResponse.hidersApproximateLocation = approximateLocation;
       }
+    }
+    if (game.closestSeekerNickname) {
+      stateResponse.closestSeekerNickname = game.closestSeekerNickname;
     }
     const role = req.query.role;
     if (role === 'hider' && game.status === 'STARTED') {

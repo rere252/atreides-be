@@ -22,7 +22,8 @@ const gameSchema = new mongoose.Schema({
     }
   },
   hiderNickname: String,
-  winnerNickname: String
+  winnerNickname: String,
+  closestSeekerNickname: String
 });
 
 module.exports = mongoose.model('Game', gameSchema);
