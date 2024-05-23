@@ -115,9 +115,11 @@ router.get('/poll-game-state/:roomId', async (req, res) => {
     }
     const role = req.query.role;
     if (role === 'hider' && game.status === 'STARTED') {
-      // Get seekers locations
+      // Get seekers' locations
       const seekers = await User.find({ room: roomId, role: 'seeker' });
-      stateResponse.seekersLocations = seekers.map(seeker => seeker.location);
+      stateResponse.seekersLocations = seekers
+        .map(seeker => seeker.location)
+        .filter(location => !!location?.latitude);
     }
     res.status(200).send(stateResponse);
   } catch (error) {
